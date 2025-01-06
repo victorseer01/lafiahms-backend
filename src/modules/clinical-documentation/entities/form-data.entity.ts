@@ -4,6 +4,7 @@ import { ClinicalTemplate } from './template.entity';
 import { TemplateVersion } from './template-version.entity';
 import { Patient } from '../../patient/entities/patient.entity';
 import { Encounter } from '../../encounter/entities/encounter.entity';
+import { FormStatus } from '../enums/form-status.enum';
 
 @Entity('clinical_form_data')
 export class FormData {
@@ -43,9 +44,6 @@ export class FormData {
   @Column('jsonb')
   formData: any;
 
-  @Column({ default: 'draft' })
-  status: string;
-
   @Column({ type: 'uuid' })
   creator: string;
 
@@ -69,4 +67,11 @@ export class FormData {
 
   @Column({ nullable: true })
   voidReason: string;
+
+  @Column({
+    type: 'enum',
+    enum: FormStatus,
+    default: FormStatus.DRAFT
+  })
+  status: string;
 }

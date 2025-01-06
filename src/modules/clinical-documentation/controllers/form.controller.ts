@@ -18,6 +18,7 @@ import {
   import { CurrentUser } from '../../../common/decorators/current-user.decorator';
   import { CurrentTenant } from '../../../common/decorators/tenant.decorator';
   import { Tenant } from '../../tenant/entities/tenant.entity';
+  import { FormStatus } from '../enums/form-status.enum';
   
   @ApiTags('clinical-forms')
   @ApiBearerAuth()
@@ -45,7 +46,12 @@ import {
     @ApiQuery({ name: 'patientId', required: false })
     @ApiQuery({ name: 'templateId', required: false })
     @ApiQuery({ name: 'encounterId', required: false })
-    @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ 
+      name: 'status', 
+      required: false,
+      enum: FormStatus,
+      description: 'Filter by form status'
+    })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     findAll(
@@ -53,7 +59,7 @@ import {
       @Query('patientId') patientId?: string,
       @Query('templateId') templateId?: string,
       @Query('encounterId') encounterId?: string,
-      @Query('status') status?: string,
+      @Query('status') status?: FormStatus,
       @Query('page') page = 1,
       @Query('limit') limit = 10,
     ) {
@@ -88,7 +94,12 @@ import {
       @CurrentTenant() tenant: Tenant,
       @CurrentUser() user: any,
     ) {
-      return this.formDataService.updateStatus(id, updateFormStatusDto.status, tenant, user.id);
+      return this.formDataService.updateStatus(
+        id,
+        updateFormStatusDto.status,
+        tenant,
+        user.id
+      );
     }
   
     @Post(':id/void')
@@ -108,10 +119,16 @@ import {
     @Permissions('read:forms')
     @UseGuards(PermissionsGuard)
     @ApiOperation({ summary: 'Get patient forms' })
+    @ApiQuery({ 
+      name: 'status', 
+      required: false,
+      enum: FormStatus,
+      description: 'Filter by form status'
+    })
     getPatientForms(
       @Param('patientId') patientId: string,
       @CurrentTenant() tenant: Tenant,
-      @Query('status') status?: string,
+      @Query('status') status?: FormStatus,
       @Query('page') page = 1,
       @Query('limit') limit = 10,
     ) {

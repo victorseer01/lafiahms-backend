@@ -32,18 +32,27 @@ export class CacheService {
   }
 
   // Patient cache methods
-  async invalidatePatientCache(tenantId: string, patientId: string): Promise<void> {
-    await this.delPattern(`patients:${tenantId}:*`);
+  async invalidatePatientCache(tenantId: string, patientId?: string): Promise<void> {
+    if (patientId) {
+      await this.delPattern(`patients:${tenantId}:${patientId}*`);
+    } else {
+      await this.delPattern(`patients:${tenantId}:*`);
+    }
   }
 
+  
   // Person cache methods
   async invalidatePersonCache(tenantId: string, personId: string): Promise<void> {
     await this.delPattern(`persons:${tenantId}:*`);
   }
 
   // Encounter cache methods
-  async invalidateEncounterCache(tenantId: string, encounterId: string): Promise<void> {
-    await this.delPattern(`encounters:${tenantId}:*`);
+  async invalidateEncounterCache(tenantId: string, encounterId?: string): Promise<void> {
+    if (encounterId) {
+      await this.delPattern(`encounters:${tenantId}:${encounterId}*`);
+    } else {
+      await this.delPattern(`encounters:${tenantId}:*`);
+    }
   }
 
   // Concept cache methods
@@ -77,13 +86,6 @@ export class CacheService {
     await this.set(`${entity}:${key}`, value, ttl);
   }
 
-  async invalidateTemplateCache(tenantId: string, templateId?: string): Promise<void> {
-    if (templateId) {
-      await this.delPattern(`templates:${tenantId}:${templateId}*`);
-    } else {
-      await this.delPattern(`templates:${tenantId}:*`);
-    }
-  }
 
   async getTemplateCache(tenantId: string, templateId: string): Promise<any> {
     return this.get(`templates:${tenantId}:${templateId}`);
@@ -92,4 +94,24 @@ export class CacheService {
   async setTemplateCache(tenantId: string, templateId: string, data: any, ttl?: number): Promise<void> {
     await this.set(`templates:${tenantId}:${templateId}`, data, ttl);
   }
+
+  // Cache invalidation methods for different entities
+  async invalidateTemplateCache(tenantId: string, templateId?: string): Promise<void> {
+    if (templateId) {
+      await this.delPattern(`templates:${tenantId}:${templateId}*`);
+    } else {
+      await this.delPattern(`templates:${tenantId}:*`);
+    }
+  }
+
+  async invalidateFormDataCache(tenantId: string, formDataId?: string): Promise<void> {
+    if (formDataId) {
+      await this.delPattern(`formData:${tenantId}:${formDataId}*`);
+    } else {
+      await this.delPattern(`formData:${tenantId}:*`);
+    }
+  }
+
+
+
 }

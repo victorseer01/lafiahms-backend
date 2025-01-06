@@ -10,6 +10,7 @@ import { CacheService } from '../../cache/cache.service';
 import { FormValidator } from '../utils/form-validator';
 import { FormProcessor } from '../utils/form-processor';
 import { FormStatus } from '../enums/form-status.enum';
+import { FORM_STATUS_TRANSITIONS } from '../types/form-status.types';
 
 @Injectable()
 export class FormDataService {
@@ -23,7 +24,6 @@ export class FormDataService {
   async submit(submitFormDto: SubmitFormDto, tenant: Tenant, creator: string): Promise<FormData> {
     const template = await this.templateService.findOne(submitFormDto.templateId, tenant);
     
-    // Get the current template version
     const currentVersion = await this.templateService.getVersion(
       submitFormDto.templateId,
       template.currentVersionId,
@@ -46,7 +46,7 @@ export class FormDataService {
     // Process form data
     const processedData = FormProcessor.processFormData({
       data: submitFormDto.formData,
-      rules: currentVersion.processingRules
+      rules: currentVersion.processingRules || []
     });
 
     const queryRunner = this.formDataRepository.manager.connection.createQueryRunner();
@@ -69,9 +69,7 @@ export class FormDataService {
       await queryRunner.manager.save(formData);
       await queryRunner.commitTransaction();
 
-      // Invalidate cache
       await this.cacheService.invalidateFormDataCache(tenant.id, formData.id);
-
       return this.findOne(formData.id, tenant);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -87,7 +85,7 @@ export class FormDataService {
       patientId?: string;
       templateId?: string;
       encounterId?: string;
-      status?: string;
+      status?: FormStatus;
       page?: number;
       limit?: number;
     }
@@ -124,13 +122,13 @@ export class FormDataService {
     }
 
     const [forms, total] = await queryBuilder
-      .orderBy('formData.dateCreated', 'DESC')  
+      .orderBy('formData.dateCreated', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
 
     const result = { data: forms, total };
-    await this.cacheService.set(cacheKey, result, 300); // Cache for 5 minutes
+    await this.cacheService.set(cacheKey, result, 300);
     
     return result;
   }
@@ -162,20 +160,22 @@ export class FormDataService {
 
   async updateStatus(
     id: string,
-    status: FormStatus,
+    newStatus: FormStatus,
     tenant: Tenant,
     updatedBy: string
   ): Promise<FormData> {
     const formData = await this.findOne(id, tenant);
+    const currentStatus = formData.status as FormStatus;
 
-    // Validate status transition
-    if (!this.isValidStatusTransition(formData.status, status)) {
-      throw new BadRequestException(`Invalid status transition from ${formData.status} to ${status}`);
+    if (!this.isValidStatusTransition(currentStatus, newStatus)) {
+      throw new BadRequestException(
+        `Invalid status transition from ${currentStatus} to ${newStatus}`
+      );
     }
 
     const updatedFormData = await this.formDataRepository.save({
       ...formData,
-      status,
+      status: newStatus,
       changedBy: updatedBy,
       dateChanged: new Date()
     });
@@ -204,13 +204,6 @@ export class FormDataService {
   }
 
   private isValidStatusTransition(currentStatus: FormStatus, newStatus: FormStatus): boolean {
-    const allowedTransitions = {
-      [FormStatus.DRAFT]: [FormStatus.COMPLETED],
-      [FormStatus.COMPLETED]: [FormStatus.SIGNED, FormStatus.DRAFT],
-      [FormStatus.SIGNED]: [FormStatus.ARCHIVED],
-      [FormStatus.ARCHIVED]: []
-    };
-
-    return allowedTransitions[currentStatus]?.includes(newStatus) || false;
+    return FORM_STATUS_TRANSITIONS[currentStatus]?.includes(newStatus) || false;
   }
 }

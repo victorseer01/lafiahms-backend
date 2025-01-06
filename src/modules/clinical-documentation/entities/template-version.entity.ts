@@ -1,3 +1,4 @@
+// src/modules/clinical-documentation/entities/template-version.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { ClinicalTemplate } from './template.entity';
 import { Tenant } from '../../tenant/entities/tenant.entity';
@@ -23,13 +24,16 @@ export class TemplateVersion {
   version: number;
 
   @Column('jsonb')
-  schema: any;  // Form schema definition
+  schema: any;
 
   @Column('jsonb', { nullable: true })
-  uiSchema: any;  // UI rendering hints
+  uiSchema: any;
 
   @Column('jsonb')
-  validationSchema: any;  // JSON Schema for validation
+  validationSchema: any;
+
+  @Column('jsonb', { nullable: true })
+  processingRules: any;  // Added this field
 
   @Column({ type: 'uuid' })
   creator: string;
